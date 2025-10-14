@@ -34,6 +34,7 @@ static void btn_fxn(uint gpio, uint32_t eventMask) {
     //            Tarkista SDK, ja jos et löydä vastaavaa funktiota, sinun täytyy toteuttaa se itse.
     // Exercise 1: Toggle the LED. 
     //             Check the SDK and if you do not find a function you would need to implement it yourself. 
+    toggle_led();
 }
 
 static void sensor_task(void *arg){
@@ -150,7 +151,7 @@ int main() {
 
     // Uncomment this lines if you want to wait till the serial monitor is connected
     /*while (!stdio_usb_connected()){
-        sleep_ms(10);
+        sleep_ms(10);asdasd
     }*/ 
     
     init_hat_sdk();
@@ -161,8 +162,9 @@ int main() {
     // Tehtävä 1:  Alusta painike ja LEd ja rekisteröi vastaava keskeytys.
     //             Keskeytyskäsittelijä on määritelty yläpuolella nimellä btn_fxn
 
-
-
+    init_button1();
+    init_led();
+    gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_FALL, true, btn_fxn);
     
     
     TaskHandle_t hSensorTask, hPrintTask, hUSB = NULL;
