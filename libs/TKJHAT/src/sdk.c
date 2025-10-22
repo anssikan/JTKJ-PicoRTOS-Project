@@ -252,10 +252,8 @@ void init_i2c(uint sda_pin, uint scl_pin) {
     i2c_init(i2c_default, 400*1000);
     gpio_set_function(sda_pin, GPIO_FUNC_I2C);
     gpio_set_function(scl_pin, GPIO_FUNC_I2C);
-    sleep_ms(500);
     gpio_pull_up(sda_pin);
     gpio_pull_up(scl_pin);
-    sleep_ms(500);
 }
 
 void init_i2c_default(){
