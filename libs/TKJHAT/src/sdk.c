@@ -252,8 +252,10 @@ void init_i2c(uint sda_pin, uint scl_pin) {
     i2c_init(i2c_default, 400*1000);
     gpio_set_function(sda_pin, GPIO_FUNC_I2C);
     gpio_set_function(scl_pin, GPIO_FUNC_I2C);
+    sleep_ms(500);
     gpio_pull_up(sda_pin);
     gpio_pull_up(scl_pin);
+    sleep_ms(500);
 }
 
 void init_i2c_default(){
@@ -544,17 +546,16 @@ uint32_t veml6030_read_light() {
     //            using data of page 5 of VEML6030 design application document: https://www.vishay.com/docs/84367/designingveml6030.pdf
     //            Finally, store the value in the variable luxVal_uncorrected.
     //
-    // Tehtävä 2: Saadaksemme luminanssin meidän tulee lukea VEML6030_ALS_REG -rekisterin arvo (katso VEML6030-datalehti).
-    //            Käytä funktioita i2c_write_blocking ja i2_read_blocking luminanssidatan keräämiseen.
-    //            Nämä funktiot löytyvät Pico SDK:sta:
-    //            https://www.raspberrypi.com/documentation/pico-sdk/hardware.html#group_hardware_i2c
-    //            Käytettävä i2c-väylä on i2c_default.
-    //            Tee tarvittavat bittikohtaiset operaatiot tallettaksesi tuloksen 16-bittiseen rekisteriin.
-    //            Kerro arvo sopivalla kertoimella huomioiden 100 ms integraatioaika ja vahvistus 1/8
-    //            käyttäen VEML6030-sovellussuunnitteluasiakirjan sivun 5 tietoja:https://www.vishay.com/docs/84367/designingveml6030.pdf
-    //            Lopuksi tallenna arvo muuttujaan luxVal_uncorrected.
-  
-    uint32_t luxVal_uncorrected = 0; 
+
+    uint8_t rxBuffer[] = {0, 0};
+    uint8_t txBuffer[] = {VEML6030_ALS_REG};
+
+    i2c_write_blocking(i2c_default, VEML6030_I2C_ADDR, txBuffer, 1, true);
+    i2c_read_blocking(i2c_default, VEML6030_I2C_ADDR, rxBuffer, sizeof(rxBuffer), false);
+
+    uint16_t luxbits = ((uint16_t)rxBuffer[0]) | ((uint16_t) rxBuffer[1] << 8);
+    uint32_t luxVal_uncorrected = luxbits * 0.5376;
+
     if (luxVal_uncorrected>1000){
         // Polynomial is pulled from pg 10 of the datasheet. 
         // See https://github.com/sparkfun/SparkFun_Ambient_Light_Sensor_Arduino_Library/blob/efde0817bd6857863067bd1653a2cfafe6c68732/src/SparkFun_VEML6030_Ambient_Light_Sensor.cpp#L409
@@ -564,7 +565,7 @@ uint32_t veml6030_read_light() {
                             (1.0023 * luxVal_uncorrected);
         return luxVal;
     }
-    return  luxVal_uncorrected;
+    return luxVal_uncorrected;
 }
 
 
@@ -737,7 +738,9 @@ float aRes, gRes;      // scale resolutions per LSB for the sensors
 
 static int icm_i2c_write_byte(uint8_t reg, uint8_t value) {
     uint8_t buf[2] = { reg, value };
+
     int result = i2c_write_blocking(i2c_default, ICM42670_I2C_ADDRESS, buf, 2, false);
+
     return result == 2 ? 0 : -1;
 }
 
@@ -801,8 +804,8 @@ int init_ICM42670() {
     if (address == -1){
         printf("Address could not be found");
     }
-    else 
-        printf ("Address: 0x%02X\n",address);
+    //else 
+        // printf ("Address: 0x%02X\n",address);
     // Step 1: Check WHO_AM_I
     uint8_t who = 0;
     if (icm_i2c_read_byte(ICM42670_REG_WHO_AM_I, &who) != 0) {
@@ -839,9 +842,9 @@ int ICM42670_startAccel(uint16_t odr_hz, uint16_t fsr_g) {
             break;
         case 8:  
             fsr_bits = ICM42670_ACCEL_FSR_8G; 
-            aRes =4096;
+            aRes = 4096;
             break;
-        case 16: 
+        case 16:
             fsr_bits = ICM42670_ACCEL_FSR_16G;
             aRes = 2048;
             break;
@@ -850,19 +853,40 @@ int ICM42670_startAccel(uint16_t odr_hz, uint16_t fsr_g) {
 
     // Map ODR to register bits
     switch (odr_hz) {
-        case 25:   odr_bits = ICM42670_ACCEL_ODR_25HZ; break;
-        case 50:   odr_bits = ICM42670_ACCEL_ODR_50HZ; break;
-        case 100:  odr_bits = ICM42670_ACCEL_ODR_100HZ; break;
-        case 200:  odr_bits = ICM42670_ACCEL_ODR_200HZ; break;
-        case 400:  odr_bits = ICM42670_ACCEL_ODR_400HZ; break;
-        case 800:  odr_bits = ICM42670_ACCEL_ODR_800HZ; break;
-        case 1600: odr_bits = ICM42670_ACCEL_ODR_1600HZ; break;
+        case 25:   
+            odr_bits = ICM42670_ACCEL_ODR_25HZ; 
+            break;
+        case 50:   
+            odr_bits = ICM42670_ACCEL_ODR_50HZ; 
+            break;
+        case 100:  
+            odr_bits = ICM42670_ACCEL_ODR_100HZ; 
+            break;
+        case 200:  
+            odr_bits = ICM42670_ACCEL_ODR_200HZ; 
+            break;
+        case 400:  
+            odr_bits = ICM42670_ACCEL_ODR_400HZ;
+            break;
+        case 800:  
+            odr_bits = ICM42670_ACCEL_ODR_800HZ; 
+            break;
+        case 1600: 
+            odr_bits = ICM42670_ACCEL_ODR_1600HZ; 
+            break;
         default:   return -2; // invalid ODR
     }
 
+
     // Combine into ACCEL_CONFIG0: [7:5] = fsr, [3:0] = odr
+
+
     uint8_t accel_config0_val = (fsr_bits << 5) | (odr_bits & 0x0F);
+    // printf("accel config: %ld\n", accel_config0_val);
+
+
     int rc = icm_i2c_write_byte(ICM42670_ACCEL_CONFIG0_REG, accel_config0_val);
+
     sleep_us(200); 
     if (rc != 0) return -3;
     return 0; // success
@@ -940,15 +964,23 @@ int ICM42670_enable_accel_gyro_lp_mode(void) {
 int ICM42670_start_with_default_values(void) {
     int rc;
 
+    printf("starting accel!\n");
+
     // Start accelerometer with defaults (e.g., 100 Hz, ±4 g)
     rc = ICM42670_startAccel(ICM42670_ACCEL_ODR_DEFAULT,
                              ICM42670_ACCEL_FSR_DEFAULT);
-    if (rc != 0) return rc;
+    if (rc != 0) {
+        return rc;
+    }
+
+    printf("starting gyro!\n");
 
     // Start gyroscope with defaults (e.g., 100 Hz, ±250 dps)
     rc = ICM42670_startGyro(ICM42670_GYRO_ODR_DEFAULT,
                             ICM42670_GYRO_FSR_DEFAULT);
-    if (rc != 0) return rc;
+    if (rc != 0) {
+        return rc;
+    }
 
     // Put both sensors into Low-Noise mode
     rc = ICM42670_enable_accel_gyro_ln_mode();

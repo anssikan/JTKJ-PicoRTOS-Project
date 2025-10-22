@@ -68,6 +68,10 @@
         "cstdio": "c",
         "freertos.h": "c",
         "pdm_microphone.h": "c",
-        "pins.h": "c"
+        "pins.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "span": "c"
     }
 }
