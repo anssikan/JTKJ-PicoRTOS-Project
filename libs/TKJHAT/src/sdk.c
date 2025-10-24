@@ -975,8 +975,6 @@ int ICM42670_enable_accel_gyro_lp_mode(void) {
 int ICM42670_start_with_default_values(void) {
     int rc;
 
-    printf("starting accel!\n");
-
     // Start accelerometer with defaults (e.g., 100 Hz, ±4 g)
     rc = ICM42670_startAccel(ICM42670_ACCEL_ODR_DEFAULT,
                              ICM42670_ACCEL_FSR_DEFAULT);
