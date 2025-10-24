@@ -81,7 +81,7 @@ static void print_task(void *arg){
         // tight_loop_contents();
 
         if (programState == DATA_READY) {
-            printf("ax: %ld ay: %ld az: %ld gx: %ld gy: %ld gz: %ld \n",ax, ay, az, gx, gy, gz);
+            printf("ax: %f ay: %f az: %f gx: %f gy: %f gz: %f \n", ax, ay, az, gx, gy, gz);
             programState = WAITING;
         }
         
@@ -103,7 +103,6 @@ static void print_task(void *arg){
 
 
 // Exercise 4: Uncomment the following line to activate the TinyUSB library.  
-// Tehtävä 4:  Poista seuraavan rivin kommentointi aktivoidaksesi TinyUSB-kirjaston. 
 
 /*
 static void usbTask(void *arg) {
